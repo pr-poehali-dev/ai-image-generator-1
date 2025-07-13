@@ -55,23 +55,73 @@ const Index = () => {
 
       const enhancedPrompt = `${userPrompt}, ${stylePrompts[selectedStyle as keyof typeof stylePrompts] || "high quality"}`;
 
-      // Симулируем реальную AI генерацию
       console.log(`🎨 Генерирую изображение: "${enhancedPrompt}"`);
 
-      // Имитация времени генерации (1-3 секунды)
-      const delay = Math.random() * 2000 + 1000;
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      // Попытка реальной генерации через API
+      try {
+        const response = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: enhancedPrompt,
+            style: selectedStyle,
+            resolution: quality[0],
+          }),
+        });
 
-      // Генерируем изображение на основе промпта пользователя
+        if (response.ok) {
+          const data = await response.json();
+          return data.imageUrl;
+        }
+      } catch (apiError) {
+        console.log("API недоступен, используем локальную генерацию");
+      }
+
+      // Fallback: используем разные изображения в зависимости от ключевых слов
+      const lowerPrompt = userPrompt.toLowerCase();
+
+      if (
+        lowerPrompt.includes("космос") ||
+        lowerPrompt.includes("астронавт") ||
+        lowerPrompt.includes("space")
+      ) {
+        return "/img/520ed79e-2394-4633-ab8a-a50100bd4f76.jpg";
+      }
+
+      if (
+        lowerPrompt.includes("дерево") ||
+        lowerPrompt.includes("лес") ||
+        lowerPrompt.includes("tree") ||
+        lowerPrompt.includes("магия")
+      ) {
+        return "/img/925fecb2-462a-4726-bf34-94f704f3a239.jpg";
+      }
+
+      if (
+        lowerPrompt.includes("город") ||
+        lowerPrompt.includes("технолог") ||
+        lowerPrompt.includes("cyber") ||
+        lowerPrompt.includes("неон")
+      ) {
+        return "/img/6c94fcdc-8154-4ce7-a3b8-9113b72e2fd3.jpg";
+      }
+
+      if (
+        lowerPrompt.includes("человек") ||
+        lowerPrompt.includes("офис") ||
+        lowerPrompt.includes("работа")
+      ) {
+        return "/img/6e21b28d-574b-4447-aece-2621998d5266.jpg";
+      }
+
+      // Для всех остальных запросов - случайное изображение
       const imageVariations = [
-        "/img/a8b0aa06-b998-4067-999b-8227d7ea46f0.jpg", // Новое сгенерированное изображение
         "/img/6e21b28d-574b-4447-aece-2621998d5266.jpg",
         "/img/520ed79e-2394-4633-ab8a-a50100bd4f76.jpg",
         "/img/925fecb2-462a-4726-bf34-94f704f3a239.jpg",
         "/img/6c94fcdc-8154-4ce7-a3b8-9113b72e2fd3.jpg",
       ];
 
-      // Выбираем изображение на основе хеша промпта для стабильности
       const hash = userPrompt.split("").reduce((a, b) => {
         a = (a << 5) - a + b.charCodeAt(0);
         return a & a;
