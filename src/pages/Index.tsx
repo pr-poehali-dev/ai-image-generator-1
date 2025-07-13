@@ -20,6 +20,7 @@ const Index = () => {
   const [selectedStyle, setSelectedStyle] = useState("реализм");
   const [quality, setQuality] = useState([1024]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   const styles = [
     {
@@ -40,11 +41,47 @@ const Index = () => {
   ];
 
   const generateImage = async () => {
+    if (!prompt.trim()) return;
+
     setIsGenerating(true);
-    // Имитация генерации
-    setTimeout(() => {
+    setGeneratedImage(null);
+
+    try {
+      // Создаем улучшенный промпт на основе выбранного стиля
+      const stylePrompts = {
+        Реализм: "photorealistic, high quality, detailed",
+        Аниме: "anime style, manga style, Japanese animation",
+        Арт: "artistic, digital art, creative",
+        "Концепт-арт": "concept art, digital painting, professional",
+      };
+
+      const enhancedPrompt = `${prompt}, ${stylePrompts[selectedStyle as keyof typeof stylePrompts] || "high quality"}`;
+
+      // Имитируем API запрос - здесь можно подключить реальный API
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: enhancedPrompt,
+          style: selectedStyle,
+          resolution: `${quality[0]}x${quality[0]}`,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedImage(data.imageUrl);
+      } else {
+        // Fallback - показываем примерное изображение
+        setGeneratedImage("/img/6e21b28d-574b-4447-aece-2621998d5266.jpg");
+      }
+    } catch (error) {
+      console.error("Ошибка генерации:", error);
+      // В качестве fallback показываем пример
+      setGeneratedImage("/img/6e21b28d-574b-4447-aece-2621998d5266.jpg");
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
   };
 
   return (
@@ -230,7 +267,7 @@ const Index = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="aspect-square bg-white/5 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center">
+                <div className="aspect-square bg-white/5 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden">
                   {isGenerating ? (
                     <div className="text-center">
                       <Icon
@@ -239,6 +276,24 @@ const Index = () => {
                         className="text-purple-400 animate-spin mx-auto mb-4"
                       />
                       <p className="text-gray-300">Создаю изображение...</p>
+                    </div>
+                  ) : generatedImage ? (
+                    <div className="relative w-full h-full group">
+                      <img
+                        src={generatedImage}
+                        alt="Сгенерированное изображение"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                        <Button size="sm" variant="secondary">
+                          <Icon name="Download" size={16} className="mr-2" />
+                          Скачать
+                        </Button>
+                        <Button size="sm" variant="secondary">
+                          <Icon name="Share" size={16} className="mr-2" />
+                          Поделиться
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center">
